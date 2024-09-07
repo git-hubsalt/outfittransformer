@@ -20,10 +20,11 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     gdino = GroundingDINOAPIWrapper(args.token)
-    prompts = dict(image='asset/demo.jpg', prompt='person.pigeon.tree')
+    prompts = dict(image='asset/20107.jpg', prompt='t-shirt.pants')
     results = gdino.inference(prompts)
-    # now visualize the results
-    image_pil = Image.open(prompts['image'])
-    image_pil = visualize(image_pil, results)
-    # dump the image to the disk
-    image_pil.save('asset/demo_output.jpg')
+    print(results)
+    # # now visualize the results
+    # image_pil = Image.open(prompts['image'])
+    # image_pil = visualize(image_pil, results)
+    # # dump the image to the disk
+    # image_pil.save('asset/demo_output.jpg')
