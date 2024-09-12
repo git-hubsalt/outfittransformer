@@ -24,7 +24,7 @@ from model_args import Args
 args = Args()
 
 # Path Setting
-args.data_dir = './data/kfashion'
+args.data_dir = './data/kfashion_sample' # data 경로 변경 필요
 args.checkpoint_dir = './checkpoint'
 args.model_path = None
     

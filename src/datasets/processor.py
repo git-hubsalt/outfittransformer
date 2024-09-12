@@ -98,10 +98,9 @@ class FashionInputProcessor:
             ) -> Dict[str, Tensor]:
         return self.preprocess_batch(category, images, texts, styles, do_pad)
 
-    def preprocess(self, category=None, image=None, text=None, style=None, **kwargs):
+    def preprocess(self, category=None, image=None, text=None, **kwargs):
         outputs = {'mask': None, 'category_ids': None, 'image_features': None,
-                    'input_ids': None, 'attention_mask': None,
-                    'style_ids':None, 'style_attention_mask': None}
+                    'input_ids': None, 'attention_mask': None}
 
         outputs['mask'] = torch.BoolTensor([False])
         
@@ -120,19 +119,14 @@ class FashionInputProcessor:
             outputs['input_ids'] = text_['input_ids'].squeeze(0)
             outputs['attention_mask'] = text_['attention_mask'].squeeze(0)
 
-        if style is not None:
-            style_ = self.text_tokenizer([style], max_length=self.style_max_length, padding=self.text_padding, truncation=self.text_truncation, return_tensors='pt')
-            outputs['style_ids'] = text_['style_ids'].squeeze(0)
-            outputs['style_attention_mask'] = text_['style_attention_mask'].squeeze(0)
-
         return outputs
 
-    def preprocess_batch(
+    def preprocess_batch( # 코디셋에 맞게 조정하기 (style tag를 outfit 단위로 추가)
             self, 
             categories: Optional[List[str]]=None, 
             images: Optional[List[ndarray]]=None, 
             texts: Optional[List[str]]=None,
-            style: Optional[str]=None,
+            styles: Optional[str]=None,
             do_pad: bool=True,
             **kwargs
             ) -> Dict[str, Tensor]:
@@ -141,25 +135,36 @@ class FashionInputProcessor:
         num_items = min(self.outfit_max_length, max([get_item_num(x) for x in [categories, images, texts]]))
         
         inputs = {'mask': [], 'category_ids': [], 'image_features': [],
-                    'input_ids': [], 'attention_mask': [], 'style_ids': None, 'style_mask': None}
+                    'input_ids': [], 'attention_mask': [], 'style_id': None, 'style_mask': None}
+        
         for item_idx in range(num_items):
             category = categories[item_idx] if categories else None
             image = images[item_idx] if images else None
             text = texts[item_idx] if texts else None
-            for k, v in self.preprocess(category, image, text, style).items():
+            for k, v in self.preprocess(category, image, text).items():
                 if v is None:
                     continue
                 inputs[k].append(v)
 
+        # style tag embedding
+        if styles is not None:
+            style_ = self.text_tokenizer([styles], max_length=self.style_max_length, padding=self.text_padding, truncation=self.text_truncation, return_tensors='pt')
+            inputs['style_id'] = style_['input_ids'].squeeze(0)
+            inputs['style_mask'] = style_['attention_mask'].squeeze(0)
+
         for k in list(inputs.keys()):
             if len(inputs[k]) > 0:
-                if do_pad:
-                    pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
-                    inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
-                inputs[k] = torch.stack(inputs[k])
+                # if do_pad:
+                #     pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
+                #     inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
+                if isinstance(inputs[k], torch.Tensor):
+                    inputs[k] = inputs[k].unsqueeze(0)
+                else:
+                    inputs[k] = torch.stack(inputs[k])
+                print(f'<{k}> :', inputs[k].shape)
             else:
                 del inputs[k]
-                
+        
         inputs['mask'] = inputs['mask'].squeeze(1)
         
         return inputs

@@ -61,9 +61,6 @@ class KFashionDataset(Dataset):
 
             items[item_id] = (category, desc, style) #
             categories.add(category)
-        
-        print('item_ids : ', len(items))
-        print('categories : ', len(categories))
 
         return items, item_ids, categories
 
@@ -74,7 +71,7 @@ class KFashionDataset(Dataset):
             img = cv2.imread(path + ".jpg")
         except:
             img = cv2.imread(path + ".png")
-        img = cv2.cvtColor(img, COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return img
     
@@ -85,7 +82,7 @@ class KFashionDataset(Dataset):
         styles = [self.items[idx][2] for idx in item_ids]
         images = [self._load_img(idx) for idx in item_ids]
 
-        return self.input_processor(category, images, texts, styles, do_pad=pad)
+        return self.input_processor(categories, images, texts, styles, do_pad=pad)
 
     
     def __getitem__(self, idx):

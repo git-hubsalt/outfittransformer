@@ -13,12 +13,14 @@ from typing import Literal
 from src.datasets.processor import FashionInputProcessor
 
 
-def agg_embeds(image_embeds=None, text_embeds=None, agg_func='concat'):
+def agg_embeds(image_embeds=None, text_embeds=None, style_embeds=None, agg_func='concat'):
     embeds = []
     if image_embeds is not None:
         embeds.append(image_embeds)
     if text_embeds is not None:
         embeds.append(text_embeds)
+    if style_embeds is not None:
+        embeds.append(style_embeds)
     
     if agg_func == 'concat':
         embeds = torch.cat(embeds, dim=1)
@@ -156,12 +158,12 @@ class KORCLIPEmbeddingModel(nn.Module):
         else:
             text_embeds = None
 
-        if inputs.get('style_ids'):
-            style_embeds = self.style_encode(inputs['style_ids'], inputs['style_attention_mask'])
+        if inputs.get('style_id'):
+            style_embeds = self.style_encode(inputs['style_id'], inputs['style_mask'])
         else:
             style_embeds = None
 
-        embeds = agg_embeds(image_embeds, text_embeds, self.agg_func)
+        embeds = agg_embeds(image_embeds, text_embeds, style_embeds, self.agg_func)
         
         if self.normalize:
             embeds = F.normalize(embeds, p=2, dim=1)
@@ -169,14 +171,14 @@ class KORCLIPEmbeddingModel(nn.Module):
 
         return {'mask': inputs.get('mask', None), 'embeds': embeds, 'style_embeds': style_embeds}
 
-    def style_encode(self, style_ids, style_attention_mask):
-        style_embeds = self.text_encoder(input_ids=style_ids, attention_mask=style_attention_mask).text_embeds
+    def style_encode(self, style_id, style_attention_mask):
+        style_embeds = self.text_encoder(input_ids=style_id, attention_mask=style_attention_mask).text_embeds
         style_embeds = self.style_ffn(style_embeds)
         if self.normalize:
             style_embeds = F.normalize(style_embeds, p=2, dim=1)
         return style_embeds
         
-    def batch_encode(self, inputs):
+    def batch_encode(self, inputs): # 여기 안 됨
         inputs = stack_dict(inputs)
         outputs = self.encode(inputs)
 
