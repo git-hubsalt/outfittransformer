@@ -142,5 +142,5 @@ if __name__ == '__main__':
                 )
         if val_auc >= best_auc:
             best_auc = val_auc
-            model_name = f'AUC{best_auc:.3f}'
+            model_name = f'epoch_{epoch}_AUC_{best_auc:.3f}'
             save_model(model, save_dir, model_name, device)
