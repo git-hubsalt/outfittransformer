@@ -73,7 +73,7 @@ class RecommendationModel(nn.Module):
             )
 
         # style embedding projection layer
-        self.style_projection = nn.Linear(self.hidden, self.hidden)
+        self.style_projection = nn.Linear(64, self.hidden)
 
     
     def encode(self, inputs):
@@ -84,21 +84,22 @@ class RecommendationModel(nn.Module):
     
     def get_score(
             self, 
-            item_embeddings,
-            style_embedding
+            item_embeddings
             ):
         task = '<cp>'
 
-        mask, embeds = item_embeddings.values()
+        mask, embeds, style_embeds = item_embeddings.values()
         n_outfit, *_ = embeds.shape
         
         task_id = torch.LongTensor([self.task2id[task] for _ in range(n_outfit)]).to(embeds.device)
         prefix_embed = self.task_embeddings(task_id).unsqueeze(1)
-        style_embed = self.style_projection(style_embedding).unsqueeze(1)
         prefix_mask = torch.zeros((n_outfit, 2), dtype=torch.bool).to(embeds.device)
+
+        style_embed = self.style_projection(style_embeds).unsqueeze(1)
+        style_mask = torch.zeros((n_outfit, 1), dtype=torch.bool).to(embeds.device)
         
         embeds = torch.cat([prefix_embed, style_embed, embeds], dim=1)
-        mask = torch.cat([prefix_mask, mask], dim=1)
+        mask = torch.cat([prefix_mask, style_mask, mask], dim=1)
         
         outputs = self.transformer(embeds, src_key_padding_mask=mask)[:, 0, :]
         outputs = self.classifier(outputs)

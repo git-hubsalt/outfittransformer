@@ -40,13 +40,29 @@ def unstack_tensors(mask, tensor):
 
 def stack_dict(batch):
     mask = batch.get('mask')  # 'mask' 키가 없을 경우 None을 반환
-    stacked_batch = {key: stack_tensors(mask, value) if (key != 'mask' and value != None) else value for key, value in batch.items()}
+    # stacked_batch = {key: stack_tensors(mask, value) if (key != 'mask' and value != None) else value for key, value in batch.items()}
+    stacked_batch = {}
+    for key, value in batch.items():
+        if key == 'mask' or value is None:
+            stacked_batch[key] = value
+        elif key in ['style_id', 'style_mask']:
+            stacked_batch[key] = value
+        else:
+            stacked_batch[key] = stack_tensors(mask, value)
     return stacked_batch
 
 
 def unstack_dict(batch):
     mask = batch.get('mask')  # 'mask' 키가 없을 경우 None을 반환
-    unstacked_batch = {key: unstack_tensors(mask, value) if (key != 'mask' and value != None) else value for key, value in batch.items()}
+    # unstacked_batch = {key: unstack_tensors(mask, value) if (key != 'mask' and value != None) else value for key, value in batch.items()}
+    unstacked_batch = {}
+    for key, value in batch.items():
+        if key == 'mask' or value is None:
+            unstacked_batch[key] = value
+        elif key == 'style_embeds':
+            unstacked_batch[key] = value
+        else:
+            unstacked_batch[key] = unstack_tensors(mask, value)
     return unstacked_batch
 
 

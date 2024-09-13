@@ -48,7 +48,6 @@ def cp_iteration(epoch, model, optimizer, scheduler, dataloader, device, is_trai
     total_y_score = []
     
     for iter, batch in enumerate(epoch_iterator, start=1):
-        print(f'NOW : {iter}')
         targets = batch['targets'].to(device)
         inputs = {key: value.to(device) for key, value in batch['inputs'].items()}
 

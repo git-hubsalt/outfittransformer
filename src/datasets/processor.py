@@ -100,7 +100,7 @@ class FashionInputProcessor:
 
     def preprocess(self, category=None, image=None, text=None, **kwargs):
         outputs = {'mask': None, 'category_ids': None, 'image_features': None,
-                    'input_ids': None, 'attention_mask': None}
+                    'input_ids': None, 'attention_mask': None, 'style_id': None, 'style_mask': None}
 
         outputs['mask'] = torch.BoolTensor([False])
         
@@ -135,7 +135,7 @@ class FashionInputProcessor:
         num_items = min(self.outfit_max_length, max([get_item_num(x) for x in [categories, images, texts]]))
         
         inputs = {'mask': [], 'category_ids': [], 'image_features': [],
-                    'input_ids': [], 'attention_mask': [], 'style_id': None, 'style_mask': None}
+                    'input_ids': [], 'attention_mask': [], 'style_id': [], 'style_mask': []}
         
         for item_idx in range(num_items):
             category = categories[item_idx] if categories else None
@@ -146,27 +146,35 @@ class FashionInputProcessor:
                     continue
                 inputs[k].append(v)
 
-        # style tag embedding
         if styles is not None:
             style_ = self.text_tokenizer([styles], max_length=self.style_max_length, padding=self.text_padding, truncation=self.text_truncation, return_tensors='pt')
-            inputs['style_id'] = style_['input_ids'].squeeze(0)
-            inputs['style_mask'] = style_['attention_mask'].squeeze(0)
+            inputs['style_id'] = style_['input_ids'].squeeze(0) # [16]
+            inputs['style_mask'] = style_['attention_mask'].squeeze(0) # [16]
 
         for k in list(inputs.keys()):
-            if len(inputs[k]) > 0:
-                # if do_pad:
-                #     pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
-                #     inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
-                if isinstance(inputs[k], torch.Tensor):
-                    inputs[k] = inputs[k].unsqueeze(0)
-                else:
-                    inputs[k] = torch.stack(inputs[k])
-                print(f'<{k}> :', inputs[k].shape)
+            if k in ['style_id', 'style_mask']:
+                pass
             else:
-                del inputs[k]
+                if len(inputs[k]) > 0:
+                    # if do_pad:
+                    #     pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
+                    #     inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
+                    inputs[k] = torch.stack(inputs[k])
+                else:
+                    del inputs[k]
         
         inputs['mask'] = inputs['mask'].squeeze(1)
         
+        '''
+        mask >> torch.Size([2, 1])
+        category_ids >> torch.Size([2, 1])
+        image_features >> torch.Size([2, 3, 224, 224])
+        input_ids >> torch.Size([2, 64])
+        attention_mask >> torch.Size([2, 64])
+        style_id >> torch.Size([16])
+        style_mask >> torch.Size([16])
+        '''
+
         return inputs
     
 
