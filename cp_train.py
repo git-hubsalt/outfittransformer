@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 
 from src.datasets.kfashion import DatasetArguments, KFashionDataset
 from src.models.load import load_model
@@ -24,7 +24,7 @@ from model_args import Args
 args = Args()
 
 # Path Setting
-args.data_dir = './data/kfashion_sample' # data 경로 변경 필요
+args.data_dir = './data/kfashion' # data 경로 변경 필요
 args.checkpoint_dir = './checkpoint'
 args.model_path = None
     
@@ -34,7 +34,7 @@ args.num_workers = 2
 args.train_batch_size = 64
 args.val_batch_size = 64
 args.lr = 1e-5
-args.wandb_key = '36f469dcbd6d8319fb649a92ef277e655fa72886' # 현조
+args.wandb_key = None #'36f469dcbd6d8319fb649a92ef277e655fa72886'
 args.use_wandb = True if args.wandb_key else False
 args.with_cuda = True
 
@@ -44,6 +44,7 @@ def cp_iteration(epoch, model, optimizer, scheduler, dataloader, device, is_trai
     epoch_iterator = tqdm(dataloader)
     
     loss = 0.
+    num_iter = len(epoch_iterator)
     total_y_true = []
     total_y_score = []
     
@@ -79,8 +80,8 @@ def cp_iteration(epoch, model, optimizer, scheduler, dataloader, device, is_trai
             if (is_train == True) and (scheduler is not None):
                 log["learning_rate"] = scheduler.get_last_lr()[0]
             wandb.log(log)
-
-    loss = loss / iter
+    
+    loss = loss / num_iter
     total_y_true = torch.cat(total_y_true)
     total_y_score = torch.cat(total_y_score)
     is_correct = (total_y_true == (total_y_score > 0.5))
@@ -123,6 +124,8 @@ if __name__ == '__main__':
     val_dataset = KFashionDataset(args.data_dir, val_dataset_args, input_processor)
     val_dataloader = DataLoader(
         dataset=val_dataset, batch_size=args.val_batch_size, shuffle=False, num_workers=args.num_workers)
+    
+    print(f"TRAIN DATASET : {len(train_dataset)} || VALID DATASET : {len(val_dataset)}")
     
     optimizer = AdamW(model.parameters(), lr=args.lr)
     scheduler = OneCycleLR(optimizer, args.lr, epochs=args.n_epochs, steps_per_epoch=len(train_dataloader))

@@ -6,7 +6,7 @@ class Args:
     # Dataset & Input Processor Settings
     polyvore_split = 'nondisjoint'
     categories = ['상의', '하의']
-    outfit_max_length = 2
+    outfit_max_length = 8
     use_image = True
     use_text = True
     text_max_length = 64

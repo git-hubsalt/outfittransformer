@@ -95,9 +95,9 @@ class RecommendationModel(nn.Module):
         prefix_embed = self.task_embeddings(task_id).unsqueeze(1)
         prefix_mask = torch.zeros((n_outfit, 2), dtype=torch.bool).to(embeds.device)
 
-        style_embed = self.style_projection(style_embeds).unsqueeze(1)
+        style_embeds = self.style_projection(style_embeds).unsqueeze(1)
         
-        embeds = torch.cat([prefix_embed, style_embed, embeds], dim=1)
+        embeds = torch.cat([prefix_embed, style_embeds, embeds], dim=1)
         mask = torch.cat([prefix_mask, mask], dim=1)
         
         outputs = self.transformer(embeds, src_key_padding_mask=mask)[:, 0, :]

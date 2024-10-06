@@ -36,12 +36,13 @@ class KFashionDataset(Dataset):
         self.args = args
         self.data_dir = data_dir
         self.is_train = (args.dataset_type == 'train')
-        self.items, self.item_ids, self.categories = self.load_data(self.data_dir, self.args)
 
         self.img_dir = os.path.join(data_dir, 'image')
         self.input_processor = input_processor
 
+        self.items, self.item_ids, self.categories = self.load_data(self.data_dir, self.args)
         self.data = self.fashion_cp_inputs(data_dir, args)
+
         self.length = len(self.data)
 
 
@@ -55,11 +56,18 @@ class KFashionDataset(Dataset):
         for item in meta_data:
             item_id = item['item_id']
 
+            # check image path exists (전체 데이터 처리 후 삭제 예정) #
+            img_path = os.path.join(self.img_dir, f"{item_id}.jpg")
+            if not os.path.exists(img_path):
+                continue
+            # ----------------------------------------------------- #
+
             category = item['semantic_category']
             desc = item['title']
             style = item['style']
 
             items[item_id] = (category, desc, style) #
+            item_ids.add(item_id)
             categories.add(category)
 
         return items, item_ids, categories
@@ -103,9 +111,40 @@ class KFashionDataset(Dataset):
             cp_data = f.readlines()
             for d in cp_data:
                 item_ids = d.split()
-                cp_inputs.append((torch.FloatTensor([1]), item_ids))
-
+                # check item exists (전체 데이터 처리 후 삭제) #
+                if all(item_id in self.item_ids for item_id in item_ids):
+                    cp_inputs.append((torch.FloatTensor([1]), item_ids))
+                # ------------------------------------------------------- # 
+                # cp_inputs.append((torch.FloatTensor([1]), item_ids))
+        print(args.dataset_type, len(cp_inputs))
         return cp_inputs
+
+    def load_sample(data_dir):
+        item_ids, categories_ = set(), set()
+        items = {}
+
+        meta_data_path = os.path.join(data_dir, 'sample.txt')
+        with open(meta_data_path, 'r') as file:
+            samples = file.readlines()
+
+            for item in samples:
+                item_id = item['item_id']
+
+                # check image path exists (전체 데이터 처리 후 삭제 예정) #
+                img_path = os.path.join(self.img_dir, f"{item_id}.jpg")
+                if not os.path.exists(img_path):
+                    continue
+                # ----------------------------------------------------- #
+
+                category = item['semantic_category']
+                desc = item['title']
+                style = item['style']
+
+                items[item_id] = (category, desc, style) #
+                item_ids.add(item_id)
+                categories.add(category)
+
+        return items, item_ids, categories
 
 
 

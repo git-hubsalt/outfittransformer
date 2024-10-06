@@ -147,22 +147,21 @@ class FashionInputProcessor:
                 inputs[k].append(v)
 
         if styles is not None:
-            style_ = self.text_tokenizer([styles], max_length=self.style_max_length, padding=self.text_padding, truncation=self.text_truncation, return_tensors='pt')
+            style_ = self.text_tokenizer([styles[0]], max_length=self.style_max_length, padding=self.text_padding, truncation=self.text_truncation, return_tensors='pt')
             inputs['style_id'] = style_['input_ids'].squeeze(0) # [16]
             inputs['style_mask'] = style_['attention_mask'].squeeze(0) # [16]
 
         for k in list(inputs.keys()):
             if k in ['style_id', 'style_mask']:
-                pass
+                continue
+            if len(inputs[k]) > 0:
+                if do_pad:
+                    pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
+                    inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
+                inputs[k] = torch.stack(inputs[k])
             else:
-                if len(inputs[k]) > 0:
-                    # if do_pad:
-                    #     pad_item = torch.zeros_like(inputs[k][-1]) if k != 'mask' else torch.BoolTensor([True])
-                    #     inputs[k] += [pad_item for _ in range(self.outfit_max_length - num_items)]
-                    inputs[k] = torch.stack(inputs[k])
-                else:
-                    del inputs[k]
-        
+                del inputs[k]
+
         inputs['mask'] = inputs['mask'].squeeze(1)
         
         '''
