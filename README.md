@@ -13,6 +13,3 @@
 ```
 python cp_train.py --task cp --train_batch 64 --valid_batch 96 --n_epochs 5 --learning_rate 1e-5 --scheduler_step_size 1000
 ```
-### test
-
-### inference
